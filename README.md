@@ -1,2 +1,2 @@
 # instance_tracker
-Metaclass for tracking, managing, and restricting instances of a given class in Python
+Decorator escrito em Python para rastrear e controlar a quantidade de instâncias de objetos chamáveis
