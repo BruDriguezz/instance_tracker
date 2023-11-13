@@ -1,25 +1,29 @@
 # tests/test_metatrack.py
 
 import pytest
-from src.metatrack import track
+from src.metatrack.track import track
 
 
-# Dummy class
-@track.track(instance_limit=2)
-class Foo:
-    def __init__(self, name):
-        self.name = name
+def test_track():
+    @track()
+    class Foo(object):
+        def __init__(self) -> None:
+            self.x = 1
+
+    X = Foo()
+    Y = Foo()
+    Z = Foo()
+
+    assert len(Foo.instances) == 3 # 3 instances of Foo
 
 
-def test_instance():
-    foo = Foo("foo")
-    assert foo.name == "foo"
+def test_track_limit():
+    with pytest.raises(RuntimeError):
+        @track(instance_limit=2)
+        class Foo(object):
+            def __init__(self) -> None:
+                self.x = 1
 
-
-def test_instance_limit():
-    foo = Foo("foo")
-    bar = Foo("bar")
-    with pytest.raises(
-        RuntimeError, match="Cannot create more than 2 instances of Foo."
-    ):
-        baz = Foo("baz")
+        X = Foo()
+        Y = Foo()
+        Z = Foo()  # RuntimeError: Cannot create more than 3 instances of Foo.
