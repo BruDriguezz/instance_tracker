@@ -6,15 +6,17 @@ from types import FunctionType
 from warnings import warn
 
 __all__ = ["track"]
-
-T = TypeVar("T", bound=(Callable[..., Any] or Type[Any]))
+T = TypeVar("T", bound=(Callable[..., object] | Type[Any]))
 
 
 def track(
+        _o: Type[T] = None,
+        /,
         **flags: Annotated[dict[Any, ...], "Flags for the decorator."],
 ) -> Callable[[T], T] | T:
     """Decorator for tracking, controlling, and logging instances of classes.
 
+    :param _o: The object to decorate, if no flags are to be passed.
     :parameter flags: Flags for the decorator.
     :type flags: dict[Any, ...]
 
@@ -26,7 +28,7 @@ def track(
         if flags:
             for k, v in flags.items():
                 if k in [
-                    "..."
+                    "instance_limit",
                 ]:  # I have to decide what flags I want to use, and what they do.
                     obj.flags.update({k: v})
 
@@ -36,6 +38,8 @@ def track(
 
             def __new__(
                     cls: Type[T],
+                    *args: Any,
+                    **kwargs: Any,
             ) -> T:
                 if (
                         obj.instance_limit is not None
@@ -46,7 +50,7 @@ def track(
                     )
 
                 instance = super(cls, obj).__new__(cls)
-                obj.instances.add(ref(instance))
+                obj.instances.add(item=instance)
                 return instance
 
             obj.__new__ = __new__
@@ -57,6 +61,9 @@ def track(
             )
 
         return obj
+
+    if _o:
+        return decorator(obj=_o)
 
     return decorator
 
