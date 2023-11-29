@@ -15,12 +15,15 @@ jobs:
       pull-requests: write
       checks: write
     steps:
+      
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           pr-mode: True
           args: --apply-fixes
           push-fixes: pull-request
+    
+          run: ls -lahR ${{ runner.temp }}
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2023.2
         env:
