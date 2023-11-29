@@ -28,6 +28,6 @@ jobs:
       - name: 'SARIF Results'
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: ${{ github.workspace }}/qodana/results/qodana.sarif.json
+          sarif_file: ${{ runner.tmp }}/qodana/results/qodana.sarif.json
 
  
