@@ -7,6 +7,7 @@ on:
       - master
       -  'releases/*'
 
+
 jobs:
   qodana:
     runs-on: ubuntu-latest
@@ -14,18 +15,12 @@ jobs:
       contents: write
       pull-requests: write
       checks: write
+      security-events: write
     steps:
       
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          pr-mode: True
-          args: --apply-fixes
-          push-fixes: pull-request
-    
-      - name: 'LS Results'
-        run: ls -lahR ${{ runner.temp }}
-        
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2023.2
         env:
