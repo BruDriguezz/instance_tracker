@@ -1,71 +1,54 @@
-"""Decorator for tracking, controlling, and logging instances of classes."""
-from __future__ import annotations
-from typing import TypeVar, Callable, Any, Type, Annotated
-from weakref import WeakSet, ref
-from types import FunctionType
-from warnings import warn
-
-__all__ = ["track"]
-T = TypeVar("T", bound=(Callable[..., object] | Type[Any]))
+from typing import Any, Callable, Type, Optional, Iterator
+from logic import ITrackable, T, TrackedObjectSet, TrackedObject
 
 
-def track(
-        _o: Type[T] = None,
-        /,
-        **flags: Annotated[dict[Any, ...], "Flags for the decorator."],
-) -> Callable[[T], T] | T:
-    """Decorator for tracking, controlling, and logging instances of classes.
+def track(_cls: Type[T], **args) -> Type[T]:
+    orig_new = _cls.__new__
 
-    :param _o: The object to decorate, if no flags are to be passed.
-    :parameter flags: Flags for the decorator.
-    :type flags: dict[Any, ...]
+    def decorator(_o: Type[T]) -> Type[T]:
+        def wrapper(cls, *w_args, **w_kwargs):
+            instance = orig_new(cls)
+            tos = TrackedObjectSet.get(_o, **args)
+            with TrackedObjectSet.sets_lock:
+                tos.obj.add(instance)
+            return instance
 
-    :return: The decorated object.
-    :rtype: Callable[[T], T] | T
-    """
+        def instances(self=None):
+            tos = TrackedObjectSet.get(_o, **args)
+            return iter(tos.obj._instances)
 
-    def decorator(obj: T) -> T:
-        if flags:
-            for k, v in flags.items():
-                if k in [
-                    "instance_limit",
-                ]:  # I have to decide what flags I want to use, and what they do.
-                    obj.flags.update({k: v})
+        _o.__new__ = wrapper
+        _o.instances = instances
+        return _o
 
-        if isinstance(obj, type):
-            obj.instance_limit = flags.get("instance_limit", None)
-            obj.instances = WeakSet()
+    return decorator(_cls)
+@track
+class TrackedClass:
+    def __init__(self, name):
+        self.name = name
 
-            def __new__(
-                    cls: Type[T],
-                    *args: Any,
-                    **kwargs: Any,
-            ) -> T:
-                if (
-                        obj.instance_limit is not None
-                        and len(obj.instances) >= obj.instance_limit
-                ):
-                    raise RuntimeError(
-                        f"Can't create more than {obj.instance_limit} instances of {obj.__name__!r}"
-                    )
+@track
+class TrackedClass2:
+    def __init__(self, name):
+        self.name = name
 
-                instance = super(cls, obj).__new__(cls)
-                obj.instances.add(item=instance)
-                return instance
+# Create instances of TrackedClass
+instance1 = TrackedClass("instance1")
 
-            obj.__new__ = __new__
+instance2 = TrackedClass("instance2")
 
-        if isinstance(obj, FunctionType):
-            warn(
-                message="Tracking functions is not yet supported, returning object as is.",
-            )
+instance3 = TrackedClass2("instance3")
 
-        return obj
+instance4 = TrackedClass2("instance3")
 
-    if _o:
-        return decorator(obj=_o)
+instance5 = TrackedClass2("instance3")
 
-    return decorator
+instance6 = TrackedClass2("instance3")
 
+instance7 = TrackedClass2("instance3")
 
-__version__ = "1.1.0"
+instance8 = TrackedClass2("instance3")
+
+from logic import TrackedObjectSet
+
+print(TrackedObjectSet.sets)
